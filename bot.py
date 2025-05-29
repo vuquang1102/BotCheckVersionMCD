@@ -74,7 +74,7 @@ async def get_mcdonalds_app_version():
                     await broadcast(text=message)
 
                 else:
-                    await broadcast(f"🚀 Bot đã khởi động. Version hiện tại: {version}")
+                    await broadcast(f"🚀 Bot đã khởi động. Version hiện tại : {version}")
 
                 logger.info(f"New version detected: {version}")
                 last_version = version
