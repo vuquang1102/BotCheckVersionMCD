@@ -11,11 +11,11 @@ logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=lo
 logger = logging.getLogger(__name__)
 
 # Read from environment
-TELEGRAM_TOKEN = os.getenv("BOT_TOKEN")
-CHAT_ID = os.getenv("CHATID")
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
 
 if not TELEGRAM_TOKEN or not CHAT_ID:
-    raise ValueError("BOT_TOKEN and CHATID environment variables must be set")
+    raise ValueError("TELEGRAM_TOKEN and CHAT_ID environment variables must be set")
 
 bot = Bot(token=TELEGRAM_TOKEN)
 last_version = None  # Global variable to store the last known version
