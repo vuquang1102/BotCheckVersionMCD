@@ -2,7 +2,9 @@ import requests
 import re
 import os
 import logging
+import asyncio
 from telegram import Bot
+from telegram.ext import ApplicationBuilder
 from apscheduler.schedulers.background import BackgroundScheduler
 import time
 
@@ -17,7 +19,9 @@ CHAT_ID = os.getenv("CHAT_ID")
 if not TELEGRAM_TOKEN or not CHAT_ID:
     raise ValueError("TELEGRAM_TOKEN and CHAT_ID environment variables must be set")
 
-bot = Bot(token=TELEGRAM_TOKEN)
+application = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
+bot = application.bot
+
 last_version = None  # Global variable to store the last known version
 
 
@@ -29,7 +33,7 @@ def extract_version_from_text(text):
     return None
 
 
-def get_mcdonalds_app_version():
+async def get_mcdonalds_app_version():
     """Check current version and notify if updated"""
     global last_version
     url = "https://apkcombo.com/vi/mcdonald-s/com.mcdonalds.mobileapp/"
@@ -39,7 +43,7 @@ def get_mcdonalds_app_version():
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
         }
 
-        bot.send_message(chat_id=CHAT_ID, text=f"✅ Checking McDonald's App version... (current: {last_version})")
+        await bot.send_message(chat_id=CHAT_ID, text=f"✅ Checking McDonald's App version... (current: {last_version})")
 
         response = requests.get(url, headers=headers)
         response.raise_for_status()
@@ -48,7 +52,7 @@ def get_mcdonalds_app_version():
 
         if version_info:
             version = version_info.strip()
-            bot.send_message(chat_id=CHAT_ID, text=f"🔍 Version Found: {version}")
+            await bot.send_message(chat_id=CHAT_ID, text=f"🔍 Version Found: {version}")
 
             if version != last_version:
                 if last_version is not None:
@@ -57,7 +61,7 @@ def get_mcdonalds_app_version():
                         f"Old Version: {last_version}\n"
                         f"New Version: {version}"
                     )
-                    bot.send_message(chat_id=CHAT_ID, text=message)
+                    await bot.send_message(chat_id=CHAT_ID, text=message)
 
                 logger.info(f"New version detected: {version}")
                 last_version = version
@@ -68,20 +72,24 @@ def get_mcdonalds_app_version():
 
     except Exception as e:
         logger.error(f"Error fetching McDonald's app version: {e}")
-        bot.send_message(chat_id=CHAT_ID, text=f"❌ Error: {e}")
+        await bot.send_message(chat_id=CHAT_ID, text=f"❌ Error: {e}")
 
 
 def start_scheduler():
     """Start periodic check scheduler"""
     scheduler = BackgroundScheduler()
-    scheduler.add_job(get_mcdonalds_app_version, 'interval', minutes=1)  # check every 1 minute
+
+    # Wrapper to run async function
+    def run_async_version_check():
+        asyncio.run(get_mcdonalds_app_version())
+
+    scheduler.add_job(run_async_version_check, 'interval', minutes=1)
     scheduler.start()
     logger.info("Scheduler started.")
 
-
 def main():
     logger.info("🚀 Starting McDonald's App version checker...")
-    get_mcdonalds_app_version()
+    asyncio.run(get_mcdonalds_app_version())
     start_scheduler()
 
     while True:
