@@ -83,11 +83,11 @@ async def get_mcdonalds_app_version():
         else:
             logger.warning("Could not extract version from response.")
 
-         # Gửi heartbeat nếu ngày hôm nay khác ngày lần trước gửi
-        today_str = datetime.utcnow().strftime('%Y-%m-%d')  # hoặc dùng datetime.now() nếu muốn theo giờ VN
-        if last_heartbeat_date != today_str:
-            await broadcast(text=f"🤖 Bot vẫn đang chạy. Phiên bản hiện tại: {last_version or 'Chưa xác định'}")
-            last_heartbeat_date = today_str
+        # ✅ Gửi heartbeat nếu đã hơn 1h kể từ lần cuối
+        now = datetime.utcnow()
+        if now - last_heartbeat_date >= timedelta(hours=12):
+            await broadcast(f"✅ Bot vẫn đang hoạt động. Phiên bản hiện tại: {last_version}")
+            last_heartbeat_date = now
 
     except Exception as e:
         logger.error(f"Error fetching McDonald's app version: {e}")
