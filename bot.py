@@ -1,5 +1,6 @@
 import requests
 import re
+import os
 import logging
 from telegram import Bot
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -10,8 +11,8 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 
 # Telegram Bot Token from @BotFather
-TELEGRAM_TOKEN = "7864653740:AAHurlXDx8zskTzQV2e8_ESo0SXFE3_bH8Q"
-CHAT_ID = "1116300387"
+TELEGRAM_TOKEN = ""
+CHAT_ID = ""
 
 bot = Bot(token=TELEGRAM_TOKEN)
 
@@ -80,6 +81,10 @@ def start_scheduler():
 
 
 def main():
+
+    TELEGRAM_TOKEN = os.getenv("BOT_TOKEN")
+    CHAT_ID = os.getenv("CHATID")
+
     logger.info("Starting McDonald's app version checker...")
     get_mcdonalds_app_version()  # initial check
     start_scheduler()
