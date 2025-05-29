@@ -6,6 +6,7 @@ import asyncio
 from telegram import Bot
 from telegram.ext import ApplicationBuilder
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from datetime import datetime
 
 # Configure logging
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -22,6 +23,15 @@ application = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
 bot = application.bot
 
 last_version = None  # Global variable to store the last known version
+last_heartbeat_date = None
+
+async def broadcast(text):
+    chat_ids = CHAT_ID.split('|')
+    for chat_id in chat_ids:
+        try:
+            await bot.send_message(chat_id=chat_id.strip(), text=text)
+        except Exception as e:
+            logger.warning(f"❌ Gửi thất bại đến {chat_id.strip()}: {e}")
 
 
 def extract_version_from_text(text):
@@ -42,7 +52,7 @@ async def get_mcdonalds_app_version():
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
         }
 
-        await bot.send_message(chat_id=CHAT_ID, text=f"✅ Checking McDonald's App version... (current: {last_version})")
+        #await broadcast(text=f"✅ Checking McDonald's App version... (current: {last_version})")
 
         response = requests.get(url, headers=headers)
         response.raise_for_status()
@@ -51,16 +61,16 @@ async def get_mcdonalds_app_version():
 
         if version_info:
             version = version_info.strip()
-            await bot.send_message(chat_id=CHAT_ID, text=f"🔍 Version Found: {version}")
+            #await broadcast(text=f"🔍 Version Found: {version}")
 
             if version != last_version:
                 if last_version is not None:
                     message = (
-                        f"⚠️ McDonald's App Version Changed!\n"
+                        f"⚠️ McDonald's App Version Đã thay đổi!\n"
                         f"Old Version: {last_version}\n"
                         f"New Version: {version}"
                     )
-                    await bot.send_message(chat_id=CHAT_ID, text=message)
+                    await broadcast(text=message)
 
                 logger.info(f"New version detected: {version}")
                 last_version = version
@@ -69,9 +79,15 @@ async def get_mcdonalds_app_version():
         else:
             logger.warning("Could not extract version from response.")
 
+         # Gửi heartbeat nếu ngày hôm nay khác ngày lần trước gửi
+        today_str = datetime.utcnow().strftime('%Y-%m-%d')  # hoặc dùng datetime.now() nếu muốn theo giờ VN
+        if last_heartbeat_date != today_str:
+            await broadcast(text=f"🤖 Bot vẫn đang chạy. Phiên bản hiện tại: {last_version or 'Chưa xác định'}")
+            last_heartbeat_date = today_str
+
     except Exception as e:
         logger.error(f"Error fetching McDonald's app version: {e}")
-        await bot.send_message(chat_id=CHAT_ID, text=f"❌ Error: {e}")
+        await broadcast(text=f"❌ Error: {e}")
 
 
 async def main():
