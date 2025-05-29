@@ -7,21 +7,22 @@ from apscheduler.schedulers.background import BackgroundScheduler
 import time
 
 # Configure logging
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Telegram Bot Token from @BotFather
-TELEGRAM_TOKEN = ""
-CHAT_ID = ""
+# Read from environment
+TELEGRAM_TOKEN = os.getenv("BOT_TOKEN")
+CHAT_ID = os.getenv("CHATID")
+
+if not TELEGRAM_TOKEN or not CHAT_ID:
+    raise ValueError("BOT_TOKEN and CHATID environment variables must be set")
 
 bot = Bot(token=TELEGRAM_TOKEN)
-
-# Global variable to store the last known version
-last_version = None
+last_version = None  # Global variable to store the last known version
 
 
 def extract_version_from_text(text):
-    """Tìm phiên bản ứng dụng từ HTML bằng regex"""
+    """Extract app version from HTML using regex"""
     match = re.search(r'"softwareVersion"\s*:\s*"([^"]+)"', text)
     if match:
         return match.group(1)
@@ -29,17 +30,17 @@ def extract_version_from_text(text):
 
 
 def get_mcdonalds_app_version():
-    """Kiểm tra phiên bản hiện tại và gửi thông báo nếu có cập nhật"""
+    """Check current version and notify if updated"""
     global last_version
     url = "https://apkcombo.com/vi/mcdonald-s/com.mcdonalds.mobileapp/"
 
     try:
-        
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
         }
-        bot.send_message(chat_id=CHAT_ID, text="Version Now: {last_version}")
-        bot.send_message(chat_id=CHAT_ID, text="Checking Version of MCDonals App...")
+
+        bot.send_message(chat_id=CHAT_ID, text=f"✅ Checking McDonald's App version... (current: {last_version})")
+
         response = requests.get(url, headers=headers)
         response.raise_for_status()
 
@@ -47,8 +48,8 @@ def get_mcdonalds_app_version():
 
         if version_info:
             version = version_info.strip()
-            bot.send_message(chat_id=CHAT_ID, text="Version Found: {version}")
-            
+            bot.send_message(chat_id=CHAT_ID, text=f"🔍 Version Found: {version}")
+
             if version != last_version:
                 if last_version is not None:
                     message = (
@@ -60,36 +61,29 @@ def get_mcdonalds_app_version():
 
                 logger.info(f"New version detected: {version}")
                 last_version = version
-                return version
             else:
-                logger.info(f"No version change. Current version: {version}")
+                logger.info("No version change.")
         else:
             logger.warning("Could not extract version from response.")
 
     except Exception as e:
         logger.error(f"Error fetching McDonald's app version: {e}")
-
-    return None
+        bot.send_message(chat_id=CHAT_ID, text=f"❌ Error: {e}")
 
 
 def start_scheduler():
-    """Khởi động lịch kiểm tra định kỳ"""
+    """Start periodic check scheduler"""
     scheduler = BackgroundScheduler()
-    scheduler.add_job(get_mcdonalds_app_version, 'interval', minutes=1)  # kiểm tra mỗi 10 phút
+    scheduler.add_job(get_mcdonalds_app_version, 'interval', minutes=1)  # check every 1 minute
     scheduler.start()
     logger.info("Scheduler started.")
 
 
 def main():
-
-    TELEGRAM_TOKEN = os.getenv("BOT_TOKEN")
-    CHAT_ID = os.getenv("CHATID")
-
-    logger.info("Starting McDonald's app version checker...")
-    get_mcdonalds_app_version()  # initial check
+    logger.info("🚀 Starting McDonald's App version checker...")
+    get_mcdonalds_app_version()
     start_scheduler()
 
-    # Keep the script running
     while True:
         time.sleep(60)
 
