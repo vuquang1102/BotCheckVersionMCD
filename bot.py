@@ -6,7 +6,8 @@ import asyncio
 from telegram import Bot
 from telegram.ext import ApplicationBuilder
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from datetime import datetime
+from datetime import datetime, timedelta
+import time
 
 # Configure logging
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -23,7 +24,7 @@ application = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
 bot = application.bot
 
 last_version = None  # Global variable to store the last known version
-last_heartbeat_date = None
+last_heartbeat_date = datetime.min
 
 async def broadcast(text):
     chat_ids = CHAT_ID.split('|')
@@ -71,6 +72,9 @@ async def get_mcdonalds_app_version():
                         f"New Version: {version}"
                     )
                     await broadcast(text=message)
+
+                else:
+                    await broadcast(f"🚀 Bot đã khởi động. Version hiện tại: {version}")
 
                 logger.info(f"New version detected: {version}")
                 last_version = version
