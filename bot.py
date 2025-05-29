@@ -5,8 +5,7 @@ import logging
 import asyncio
 from telegram import Bot
 from telegram.ext import ApplicationBuilder
-from apscheduler.schedulers.background import BackgroundScheduler
-import time
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 # Configure logging
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -75,26 +74,24 @@ async def get_mcdonalds_app_version():
         await bot.send_message(chat_id=CHAT_ID, text=f"❌ Error: {e}")
 
 
-def start_scheduler():
-    """Start periodic check scheduler"""
-    scheduler = BackgroundScheduler()
+async def main():
+    logger.info("🚀 Starting McDonald's App version checker...")
 
-    # Wrapper to run async function
-    def run_async_version_check():
-        asyncio.run(get_mcdonalds_app_version())
+    # Initial check
+    await get_mcdonalds_app_version()
 
-    scheduler.add_job(run_async_version_check, 'interval', minutes=1)
+    # Start async scheduler
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(get_mcdonalds_app_version, 'interval', minutes=1)
     scheduler.start()
     logger.info("Scheduler started.")
 
-def main():
-    logger.info("🚀 Starting McDonald's App version checker...")
-    asyncio.run(get_mcdonalds_app_version())
-    start_scheduler()
-
-    while True:
-        time.sleep(60)
+    # Keep running
+    await application.initialize()
+    await application.start()
+    await application.updater.start_polling()
+    await application.updater.wait_for_stop()
 
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())
