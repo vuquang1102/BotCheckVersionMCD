@@ -45,7 +45,7 @@ def extract_version_from_text(text):
 
 async def get_mcdonalds_app_version():
     """Check current version and notify if updated"""
-    global last_version
+    global last_version, last_heartbeat_date
     url = "https://apkcombo.com/vi/mcdonald-s/com.mcdonalds.mobileapp/"
 
     try:
@@ -84,7 +84,7 @@ async def get_mcdonalds_app_version():
             logger.warning("Could not extract version from response.")
 
         # ✅ Gửi heartbeat nếu đã hơn 1h kể từ lần cuối
-        now = datetime.utcnow()
+        now = datetime.now()
         if now - last_heartbeat_date >= timedelta(hours=12):
             await broadcast(f"✅ Bot vẫn đang hoạt động. Phiên bản hiện tại: {last_version}")
             last_heartbeat_date = now
